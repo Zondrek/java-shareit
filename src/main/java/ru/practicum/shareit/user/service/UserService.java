@@ -2,6 +2,7 @@ package ru.practicum.shareit.user.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.error.exception.NotFoundException;
 import ru.practicum.shareit.user.mapper.UserMapper;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.model.UserRequestDto;
@@ -24,7 +25,8 @@ public class UserService {
     }
 
     public UserResponseDto updateUser(long id, UserRequestDto dto) {
-        User oldUser = repository.getUser(id);
+        User oldUser = repository.getUser(id)
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден, userId = " + id));
         User newUser = UserMapper.toUser(dto);
         newUser.setId(id);
         User result = update(oldUser, newUser);
@@ -37,7 +39,9 @@ public class UserService {
     }
 
     public UserResponseDto getUser(long id) {
-        return UserMapper.toUserResponseDto(repository.getUser(id));
+        User user = repository.getUser(id)
+                .orElseThrow(() -> new ru.practicum.shareit.error.exception.NotFoundException("Пользователь не найден, userId = " + id));
+        return UserMapper.toUserResponseDto(user);
     }
 
     public void deleteUser(long id) {

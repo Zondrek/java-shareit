@@ -3,6 +3,7 @@ package ru.practicum.shareit.item.repository;
 import ru.practicum.shareit.item.model.Item;
 
 import java.util.Collection;
+import java.util.Optional;
 
 public interface ItemRepository {
 
@@ -10,7 +11,7 @@ public interface ItemRepository {
 
     void updateItem(Item item);
 
-    Item getItem(long itemId);
+    Optional<Item> getItem(long itemId);
 
     Collection<Item> getItemsByOwner(long ownerId);
 

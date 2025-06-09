@@ -2,13 +2,9 @@ package ru.practicum.shareit.user.repository;
 
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.error.exception.ConflictException;
-import ru.practicum.shareit.error.exception.NotFoundException;
 import ru.practicum.shareit.user.model.User;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class InMemoryUserRepository implements UserRepository {
@@ -31,9 +27,6 @@ public class InMemoryUserRepository implements UserRepository {
     @Override
     public void updateUser(User user) {
         User oldUser = users.get(user.getId());
-        if (oldUser == null) {
-            throw new NotFoundException("Пользователь не найден");
-        }
 
         if (!oldUser.getEmail().equals(user.getEmail())) {
             Long userIdWithEmail = emails.get(user.getEmail());
@@ -53,12 +46,8 @@ public class InMemoryUserRepository implements UserRepository {
     }
 
     @Override
-    public User getUser(long userId) {
-        User user = users.get(userId);
-        if (user == null) {
-            throw new NotFoundException("Пользователя с таким идентификатором не существует");
-        }
-        return user;
+    public Optional<User> getUser(long userId) {
+        return Optional.ofNullable(users.get(userId));
     }
 
     @Override

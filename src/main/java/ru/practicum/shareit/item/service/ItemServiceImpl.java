@@ -22,7 +22,8 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto createItem(ItemDto itemDto, long userId) {
-        User owner = userRepository.getUser(userId);
+        User owner = userRepository.getUser(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден, userId = " + userId));
         Item item = ItemMapper.toItem(itemDto, owner);
         long itemId = itemRepository.createItem(item);
         itemDto.setId(itemId);
@@ -31,7 +32,8 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto updateItem(ItemDto itemDto, long itemId, long userId) {
-        Item existingItem = itemRepository.getItem(itemId);
+        Item existingItem = itemRepository.getItem(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь не найдена, itemId = " + itemId));
         if (!existingItem.getOwner().getId().equals(userId)) {
             throw new NotFoundException("Пользователь не является владельцем данной вещи");
         }
@@ -50,13 +52,13 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto getItem(long itemId) {
-        Item item = itemRepository.getItem(itemId);
+        Item item = itemRepository.getItem(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь не найдена, itemId = " + itemId));
         return ItemMapper.toItemDto(item);
     }
 
     @Override
     public Collection<ItemDto> getItemsByOwner(long userId) {
-        userRepository.getUser(userId);
         Collection<Item> items = itemRepository.getItemsByOwner(userId);
         return items.stream()
                 .map(ItemMapper::toItemDto)
