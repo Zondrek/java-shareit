@@ -11,6 +11,7 @@ import ru.practicum.shareit.error.dto.ErrorResponse;
 import ru.practicum.shareit.error.dto.ValidationErrorResponse;
 import ru.practicum.shareit.error.dto.Violation;
 import ru.practicum.shareit.error.exception.ConflictException;
+import ru.practicum.shareit.error.exception.ForbiddenException;
 import ru.practicum.shareit.error.exception.NotFoundException;
 
 import java.util.List;
@@ -30,6 +31,13 @@ public class ErrorHandlingControllerAdvice {
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse onNotFoundException(NotFoundException e) {
+        log.warn(e.getMessage());
+        return new ErrorResponse(e.getMessage());
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse onForbiddenException(ForbiddenException e) {
         log.warn(e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
