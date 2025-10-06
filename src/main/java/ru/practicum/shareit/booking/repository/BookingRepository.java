@@ -15,51 +15,31 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByBookerId(Long bookerId, Sort sort);
 
     // Текущие бронирования пользователя
-    @Query("select b from Booking b " +
-            "where b.booker.id = ?1 " +
-            "and b.start < ?2 and b.end > ?2")
-    List<Booking> findCurrentByBookerId(Long bookerId, LocalDateTime now, Sort sort);
+    List<Booking> findByBookerIdAndStartBeforeAndEndAfter(Long bookerId, LocalDateTime start, LocalDateTime end, Sort sort);
 
     // Прошлые бронирования пользователя
-    List<Booking> findByBookerIdAndEndIsBefore(Long bookerId, LocalDateTime end, Sort sort);
+    List<Booking> findByBookerIdAndEndBefore(Long bookerId, LocalDateTime end, Sort sort);
 
     // Будущие бронирования пользователя
-    List<Booking> findByBookerIdAndStartIsAfter(Long bookerId, LocalDateTime start, Sort sort);
+    List<Booking> findByBookerIdAndStartAfter(Long bookerId, LocalDateTime start, Sort sort);
 
     // Бронирования по статусу
     List<Booking> findByBookerIdAndStatus(Long bookerId, BookingStatus status, Sort sort);
 
     // Все бронирования вещей владельца
-    @Query("select b from Booking b " +
-            "where b.item.owner.id = ?1")
-    List<Booking> findByOwnerId(Long ownerId, Sort sort);
+    List<Booking> findByItemOwnerId(Long ownerId, Sort sort);
 
     // Текущие бронирования вещей владельца
-    @Query("select b from Booking b " +
-            "where b.item.owner.id = ?1 " +
-            "and b.start < ?2 and b.end > ?2")
-    List<Booking> findCurrentByOwnerId(Long ownerId, LocalDateTime now, Sort sort);
+    List<Booking> findByItemOwnerIdAndStartBeforeAndEndAfter(Long ownerId, LocalDateTime start, LocalDateTime end, Sort sort);
 
     // Прошлые бронирования вещей владельца
-    @Query("select b from Booking b " +
-            "where b.item.owner.id = ?1 " +
-            "and b.end < ?2")
-    List<Booking> findPastByOwnerId(Long ownerId, LocalDateTime now, Sort sort);
+    List<Booking> findByItemOwnerIdAndEndBefore(Long ownerId, LocalDateTime now, Sort sort);
 
     // Будущие бронирования вещей владельца
-    @Query("select b from Booking b " +
-            "where b.item.owner.id = ?1 " +
-            "and b.start > ?2")
-    List<Booking> findFutureByOwnerId(Long ownerId, LocalDateTime now, Sort sort);
+    List<Booking> findByItemOwnerIdAndStartAfter(Long ownerId, LocalDateTime now, Sort sort);
 
     // Бронирования вещей владельца по статусу
-    @Query("select b from Booking b " +
-            "where b.item.owner.id = ?1 " +
-            "and b.status = ?2")
-    List<Booking> findByOwnerIdAndStatus(Long ownerId, BookingStatus status, Sort sort);
-
-    // Бронирования для конкретной вещи
-    List<Booking> findByItemId(Long itemId, Sort sort);
+    List<Booking> findByItemOwnerIdAndStatus(Long ownerId, BookingStatus status, Sort sort);
 
     // Последнее завершенное бронирование для вещи
     @Query("select b from Booking b " +
@@ -86,4 +66,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "and b.end < ?3 " +
             "and b.status = ?4")
     boolean existsCompletedBookingByBookerAndItem(Long bookerId, Long itemId, LocalDateTime now, BookingStatus status);
+
+    // Получить все бронирования для списка вещей
+    @Query("select b from Booking b " +
+            "where b.item.id in ?1 " +
+            "and b.status = ?2 " +
+            "order by b.start asc")
+    List<Booking> findByItemIdInAndStatus(List<Long> itemIds, BookingStatus status);
+
+    // Проверка пересечения бронирований
+    @Query("select count(b) > 0 from Booking b " +
+            "where b.item.id = ?1 " +
+            "and b.status != ?2 " +
+            "and ((b.start < ?4 and b.end > ?3) " +
+            "or (b.start >= ?3 and b.start < ?4))")
+    boolean existsOverlappingBooking(Long itemId, BookingStatus rejectedStatus, LocalDateTime start, LocalDateTime end);
 }

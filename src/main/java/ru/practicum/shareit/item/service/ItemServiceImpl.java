@@ -21,7 +21,9 @@ import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -70,12 +72,7 @@ public class ItemServiceImpl implements ItemService {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Вещь не найдена, itemId = " + itemId));
 
-        ItemWithBookingsDto dto = ItemWithBookingsDto.builder()
-                .id(item.getId())
-                .name(item.getName())
-                .description(item.getDescription())
-                .available(item.getAvailable())
-                .build();
+        ItemWithBookingsDto dto = mapToItemWithBookingsDto(item);
 
         // Добавляем информацию о бронированиях только для владельца
         if (item.getOwner().getId().equals(userId)) {
@@ -93,16 +90,30 @@ public class ItemServiceImpl implements ItemService {
     public Collection<ItemWithBookingsDto> getItemsByOwner(long userId) {
         Collection<Item> items = itemRepository.findByOwnerId(userId);
 
+        if (items.isEmpty()) {
+            return List.of();
+        }
+
+        // Получаем все ID вещей
+        List<Long> itemIds = items.stream()
+                .map(Item::getId)
+                .collect(Collectors.toList());
+
+        // Загружаем все бронирования одним запросом
+        LocalDateTime now = LocalDateTime.now();
+        List<Booking> bookings = bookingRepository.findByItemIdInAndStatus(itemIds, BookingStatus.APPROVED);
+
+        // Группируем бронирования по itemId
+        Map<Long, List<Booking>> bookingsByItem = bookings.stream()
+                .collect(Collectors.groupingBy(b -> b.getItem().getId()));
+
         return items.stream()
                 .map(item -> {
-                    ItemWithBookingsDto dto = ItemWithBookingsDto.builder()
-                            .id(item.getId())
-                            .name(item.getName())
-                            .description(item.getDescription())
-                            .available(item.getAvailable())
-                            .build();
+                    ItemWithBookingsDto dto = mapToItemWithBookingsDto(item);
 
-                    addBookingInfo(dto, item.getId());
+                    // Добавляем информацию о бронированиях из предзагруженных данных
+                    List<Booking> itemBookings = bookingsByItem.getOrDefault(item.getId(), List.of());
+                    addBookingInfoFromList(dto, itemBookings, now);
 
                     return dto;
                 })
@@ -151,23 +162,51 @@ public class ItemServiceImpl implements ItemService {
         return CommentMapper.toCommentDto(savedComment);
     }
 
+    private ItemWithBookingsDto mapToItemWithBookingsDto(Item item) {
+        return ItemWithBookingsDto.builder()
+                .id(item.getId())
+                .name(item.getName())
+                .description(item.getDescription())
+                .available(item.getAvailable())
+                .build();
+    }
+
     private void addBookingInfo(ItemWithBookingsDto dto, Long itemId) {
         LocalDateTime now = LocalDateTime.now();
         Booking lastBooking = bookingRepository.findLastBookingForItem(itemId, now, BookingStatus.APPROVED);
         Booking nextBooking = bookingRepository.findNextBookingForItem(itemId, now, BookingStatus.APPROVED);
+        setBookingDtoInfo(dto, lastBooking, nextBooking);
+    }
 
+    private void addBookingInfoFromList(ItemWithBookingsDto dto, List<Booking> bookings, LocalDateTime now) {
+        // Находим последнее завершенное бронирование
+        Booking lastBooking = bookings.stream()
+                .filter(b -> b.getEnd().isBefore(now))
+                .max(Comparator.comparing(Booking::getEnd))
+                .orElse(null);
+
+        // Находим ближайшее будущее бронирование
+        Booking nextBooking = bookings.stream()
+                .filter(b -> b.getStart().isAfter(now))
+                .min(Comparator.comparing(Booking::getStart))
+                .orElse(null);
+
+        setBookingDtoInfo(dto, lastBooking, nextBooking);
+    }
+
+    private void setBookingDtoInfo(ItemWithBookingsDto dto, Booking lastBooking, Booking nextBooking) {
         if (lastBooking != null) {
-            dto.setLastBooking(ItemWithBookingsDto.BookingShortDto.builder()
-                    .id(lastBooking.getId())
-                    .bookerId(lastBooking.getBooker().getId())
-                    .build());
+            dto.setLastBooking(toBookingShortDto(lastBooking));
         }
-
         if (nextBooking != null) {
-            dto.setNextBooking(ItemWithBookingsDto.BookingShortDto.builder()
-                    .id(nextBooking.getId())
-                    .bookerId(nextBooking.getBooker().getId())
-                    .build());
+            dto.setNextBooking(toBookingShortDto(nextBooking));
         }
+    }
+
+    private ItemWithBookingsDto.BookingShortDto toBookingShortDto(Booking booking) {
+        return ItemWithBookingsDto.BookingShortDto.builder()
+                .id(booking.getId())
+                .bookerId(booking.getBooker().getId())
+                .build();
     }
 }

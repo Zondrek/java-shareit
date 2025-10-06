@@ -54,6 +54,13 @@ public class BookingServiceImpl implements BookingService {
             throw new NotFoundException("Владелец не может забронировать свою вещь");
         }
 
+        // Проверка на пересечение с существующими бронированиями
+        boolean hasOverlap = bookingRepository.existsOverlappingBooking(
+                dto.getItemId(), BookingStatus.REJECTED, dto.getStart(), dto.getEnd());
+        if (hasOverlap) {
+            throw new IllegalArgumentException("Вещь уже забронирована на указанное время");
+        }
+
         Booking booking = Booking.builder()
                 .start(dto.getStart())
                 .end(dto.getEnd())
@@ -111,27 +118,14 @@ public class BookingServiceImpl implements BookingService {
 
         LocalDateTime now = LocalDateTime.now();
         Sort sort = Sort.by(Sort.Direction.DESC, "start");
-        List<Booking> bookings;
-
-        switch (state) {
-            case CURRENT:
-                bookings = bookingRepository.findCurrentByBookerId(bookerId, now, sort);
-                break;
-            case PAST:
-                bookings = bookingRepository.findByBookerIdAndEndIsBefore(bookerId, now, sort);
-                break;
-            case FUTURE:
-                bookings = bookingRepository.findByBookerIdAndStartIsAfter(bookerId, now, sort);
-                break;
-            case WAITING:
-                bookings = bookingRepository.findByBookerIdAndStatus(bookerId, BookingStatus.WAITING, sort);
-                break;
-            case REJECTED:
-                bookings = bookingRepository.findByBookerIdAndStatus(bookerId, BookingStatus.REJECTED, sort);
-                break;
-            default:
-                bookings = bookingRepository.findByBookerId(bookerId, sort);
-        }
+        List<Booking> bookings = switch (state) {
+            case CURRENT -> bookingRepository.findByBookerIdAndStartBeforeAndEndAfter(bookerId, now, now, sort);
+            case PAST -> bookingRepository.findByBookerIdAndEndBefore(bookerId, now, sort);
+            case FUTURE -> bookingRepository.findByBookerIdAndStartAfter(bookerId, now, sort);
+            case WAITING -> bookingRepository.findByBookerIdAndStatus(bookerId, BookingStatus.WAITING, sort);
+            case REJECTED -> bookingRepository.findByBookerIdAndStatus(bookerId, BookingStatus.REJECTED, sort);
+            default -> bookingRepository.findByBookerId(bookerId, sort);
+        };
 
         return BookingMapper.toBookingResponseDtoList(bookings);
     }
@@ -144,27 +138,14 @@ public class BookingServiceImpl implements BookingService {
 
         LocalDateTime now = LocalDateTime.now();
         Sort sort = Sort.by(Sort.Direction.DESC, "start");
-        List<Booking> bookings;
-
-        switch (state) {
-            case CURRENT:
-                bookings = bookingRepository.findCurrentByOwnerId(ownerId, now, sort);
-                break;
-            case PAST:
-                bookings = bookingRepository.findPastByOwnerId(ownerId, now, sort);
-                break;
-            case FUTURE:
-                bookings = bookingRepository.findFutureByOwnerId(ownerId, now, sort);
-                break;
-            case WAITING:
-                bookings = bookingRepository.findByOwnerIdAndStatus(ownerId, BookingStatus.WAITING, sort);
-                break;
-            case REJECTED:
-                bookings = bookingRepository.findByOwnerIdAndStatus(ownerId, BookingStatus.REJECTED, sort);
-                break;
-            default:
-                bookings = bookingRepository.findByOwnerId(ownerId, sort);
-        }
+        List<Booking> bookings = switch (state) {
+            case CURRENT -> bookingRepository.findByItemOwnerIdAndStartBeforeAndEndAfter(ownerId, now, now, sort);
+            case PAST -> bookingRepository.findByItemOwnerIdAndEndBefore(ownerId, now, sort);
+            case FUTURE -> bookingRepository.findByItemOwnerIdAndStartAfter(ownerId, now, sort);
+            case WAITING -> bookingRepository.findByItemOwnerIdAndStatus(ownerId, BookingStatus.WAITING, sort);
+            case REJECTED -> bookingRepository.findByItemOwnerIdAndStatus(ownerId, BookingStatus.REJECTED, sort);
+            default -> bookingRepository.findByItemOwnerId(ownerId, sort);
+        };
 
         return BookingMapper.toBookingResponseDtoList(bookings);
     }
