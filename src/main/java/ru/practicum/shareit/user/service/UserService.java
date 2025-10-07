@@ -19,33 +19,32 @@ public class UserService {
 
     public UserResponseDto createUser(UserRequestDto dto) {
         User user = UserMapper.toUser(dto);
-        long id = repository.createUser(user);
-        user.setId(id);
-        return UserMapper.toUserResponseDto(user);
+        User savedUser = repository.save(user);
+        return UserMapper.toUserResponseDto(savedUser);
     }
 
     public UserResponseDto updateUser(long id, UserRequestDto dto) {
-        User oldUser = repository.getUser(id)
+        User oldUser = repository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Пользователь не найден, userId = " + id));
         User newUser = UserMapper.toUser(dto);
         newUser.setId(id);
         User result = update(oldUser, newUser);
-        repository.updateUser(result);
-        return UserMapper.toUserResponseDto(result);
+        User savedUser = repository.save(result);
+        return UserMapper.toUserResponseDto(savedUser);
     }
 
     public Collection<UserResponseDto> getUsers() {
-        return UserMapper.toUserResponseDtoCollection(repository.getUsers());
+        return UserMapper.toUserResponseDtoCollection(repository.findAll());
     }
 
     public UserResponseDto getUser(long id) {
-        User user = repository.getUser(id)
-                .orElseThrow(() -> new ru.practicum.shareit.error.exception.NotFoundException("Пользователь не найден, userId = " + id));
+        User user = repository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден, userId = " + id));
         return UserMapper.toUserResponseDto(user);
     }
 
     public void deleteUser(long id) {
-        repository.deleteUser(id);
+        repository.deleteById(id);
     }
 
     private User update(User originalUser, User newUser) {
