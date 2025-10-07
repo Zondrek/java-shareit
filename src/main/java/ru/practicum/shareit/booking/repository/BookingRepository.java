@@ -78,7 +78,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("select count(b) > 0 from Booking b " +
             "where b.item.id = ?1 " +
             "and b.status != ?2 " +
-            "and ((b.start < ?4 and b.end > ?3) " +
-            "or (b.start >= ?3 and b.start < ?4))")
+            "and b.start < ?4 and b.end > ?3")
     boolean existsOverlappingBooking(Long itemId, BookingStatus rejectedStatus, LocalDateTime start, LocalDateTime end);
 }
