@@ -16,6 +16,7 @@ import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.CommentRepository;
 import ru.practicum.shareit.item.repository.ItemRepository;
+import ru.practicum.shareit.request.repository.ItemRequestRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
@@ -35,6 +36,7 @@ public class ItemServiceImpl implements ItemService {
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
+    private final ItemRequestRepository itemRequestRepository;
 
     @Override
     @Transactional
@@ -42,6 +44,15 @@ public class ItemServiceImpl implements ItemService {
         User owner = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь не найден, userId = " + userId));
         Item item = ItemMapper.toItem(itemDto, owner);
+
+        // Если указан requestId, устанавливаем связь с запросом
+        if (itemDto.getRequestId() != null) {
+            ru.practicum.shareit.request.model.ItemRequest request = itemRequestRepository
+                .findById(itemDto.getRequestId())
+                .orElseThrow(() -> new NotFoundException("Запрос не найден, requestId = " + itemDto.getRequestId()));
+            item.setRequest(request);
+        }
+
         Item savedItem = itemRepository.save(item);
         return ItemMapper.toItemDto(savedItem);
     }
