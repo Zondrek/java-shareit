@@ -8,12 +8,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.error.exception.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.service.ItemService;
+import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.request.dto.ItemRequestResponseDto;
-import ru.practicum.shareit.user.dto.UserRequestDto;
-import ru.practicum.shareit.user.model.UserResponseDto;
-import ru.practicum.shareit.user.service.UserService;
+import ru.practicum.shareit.request.model.ItemRequest;
+import ru.practicum.shareit.request.repository.ItemRequestRepository;
+import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.util.List;
 
@@ -28,23 +30,26 @@ class ItemRequestServiceIntegrationTest {
     private ItemRequestService itemRequestService;
 
     @Autowired
-    private UserService userService;
+    private UserRepository userRepository;
 
     @Autowired
-    private ItemService itemService;
+    private ItemRepository itemRepository;
 
-    private UserResponseDto requester;
-    private UserResponseDto otherUser;
+    @Autowired
+    private ItemRequestRepository itemRequestRepository;
+
+    private User requester;
+    private User otherUser;
 
     @BeforeEach
     void setUp() {
-        // Создаём пользователей для тестов
-        requester = userService.createUser(UserRequestDto.builder()
+        // Создаём пользователей напрямую через репозиторий
+        requester = userRepository.save(User.builder()
                 .name("Requester")
                 .email("requester@test.com")
                 .build());
 
-        otherUser = userService.createUser(UserRequestDto.builder()
+        otherUser = userRepository.save(User.builder()
                 .name("Other User")
                 .email("other@test.com")
                 .build());
@@ -89,14 +94,15 @@ class ItemRequestServiceIntegrationTest {
                 .build();
         ItemRequestResponseDto request = itemRequestService.createRequest(requester.getId(), requestDto);
 
-        // Создаём item для запроса
-        ItemDto itemDto = ItemDto.builder()
+        // Создаём item напрямую через репозиторий
+        ItemRequest savedRequest = itemRequestRepository.findById(request.getId()).orElseThrow();
+        itemRepository.save(Item.builder()
                 .name("Drill")
                 .description("Electric drill")
                 .available(true)
-                .requestId(request.getId())
-                .build();
-        itemService.createItem(itemDto, otherUser.getId());
+                .owner(otherUser)
+                .request(savedRequest)
+                .build());
 
         // When
         List<ItemRequestResponseDto> requests = itemRequestService.getUserRequests(requester.getId());
@@ -191,21 +197,22 @@ class ItemRequestServiceIntegrationTest {
                 .build();
         ItemRequestResponseDto request = itemRequestService.createRequest(requester.getId(), requestDto);
 
-        // Создаём items для запроса
-        ItemDto item1 = ItemDto.builder()
+        // Создаём items напрямую через репозиторий
+        ItemRequest savedRequest = itemRequestRepository.findById(request.getId()).orElseThrow();
+        itemRepository.save(Item.builder()
                 .name("Hammer")
                 .description("Heavy hammer")
                 .available(true)
-                .requestId(request.getId())
-                .build();
-        ItemDto item2 = ItemDto.builder()
+                .owner(otherUser)
+                .request(savedRequest)
+                .build());
+        itemRepository.save(Item.builder()
                 .name("Screwdriver")
                 .description("Phillips screwdriver")
                 .available(true)
-                .requestId(request.getId())
-                .build();
-        itemService.createItem(item1, otherUser.getId());
-        itemService.createItem(item2, otherUser.getId());
+                .owner(otherUser)
+                .request(savedRequest)
+                .build());
 
         // When
         ItemRequestResponseDto found = itemRequestService.getRequestById(requester.getId(), request.getId());
