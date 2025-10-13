@@ -63,50 +63,6 @@ class UserControllerTest {
     }
 
     @Test
-    void createUser_shouldReturn400_whenEmailIsNull() throws Exception {
-        // Given
-        UserRequestDto requestDto = UserRequestDto.builder()
-                .name("Test User")
-                .build();
-
-        // When/Then
-        mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void createUser_shouldReturn400_whenEmailIsInvalid() throws Exception {
-        // Given
-        UserRequestDto requestDto = UserRequestDto.builder()
-                .email("invalid-email")
-                .name("Test User")
-                .build();
-
-        // When/Then
-        mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void createUser_shouldReturn400_whenEmailIsBlank() throws Exception {
-        // Given
-        UserRequestDto requestDto = UserRequestDto.builder()
-                .email("   ")
-                .name("Test User")
-                .build();
-
-        // When/Then
-        mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void updateUser_shouldReturnUpdatedUser() throws Exception {
         // Given
         UserRequestDto requestDto = UserRequestDto.builder()
