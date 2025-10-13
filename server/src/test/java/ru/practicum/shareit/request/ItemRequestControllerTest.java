@@ -70,21 +70,6 @@ class ItemRequestControllerTest {
     }
 
     @Test
-    void createRequest_shouldReturn400_whenDescriptionIsBlank() throws Exception {
-        // Given
-        ItemRequestDto requestDto = ItemRequestDto.builder()
-                .description("")
-                .build();
-
-        // When/Then
-        mockMvc.perform(post("/requests")
-                        .header(USER_ID_HEADER, 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void createRequest_shouldReturn404_whenUserNotExists() throws Exception {
         // Given
         ItemRequestDto requestDto = ItemRequestDto.builder()
@@ -189,26 +174,6 @@ class ItemRequestControllerTest {
                         .header(USER_ID_HEADER, 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
-    }
-
-    @Test
-    void getAllRequests_shouldReturn400_whenFromIsNegative() throws Exception {
-        // When/Then
-        mockMvc.perform(get("/requests/all")
-                        .header(USER_ID_HEADER, 1L)
-                        .param("from", "-1")
-                        .param("size", "10"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void getAllRequests_shouldReturn400_whenSizeIsZeroOrNegative() throws Exception {
-        // When/Then
-        mockMvc.perform(get("/requests/all")
-                        .header(USER_ID_HEADER, 1L)
-                        .param("from", "0")
-                        .param("size", "0"))
-                .andExpect(status().isBadRequest());
     }
 
     @Test

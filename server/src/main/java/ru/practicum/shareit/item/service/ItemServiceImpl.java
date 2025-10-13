@@ -16,6 +16,7 @@ import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.CommentRepository;
 import ru.practicum.shareit.item.repository.ItemRepository;
+import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.request.repository.ItemRequestRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
@@ -47,7 +48,7 @@ public class ItemServiceImpl implements ItemService {
 
         // Если указан requestId, устанавливаем связь с запросом
         if (itemDto.getRequestId() != null) {
-            ru.practicum.shareit.request.model.ItemRequest request = itemRequestRepository
+            ItemRequest request = itemRequestRepository
                 .findById(itemDto.getRequestId())
                 .orElseThrow(() -> new NotFoundException("Запрос не найден, requestId = " + itemDto.getRequestId()));
             item.setRequest(request);

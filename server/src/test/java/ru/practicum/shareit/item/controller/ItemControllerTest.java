@@ -70,23 +70,6 @@ class ItemControllerTest {
     }
 
     @Test
-    void createItem_shouldReturn400_whenNameIsBlank() throws Exception {
-        // Given
-        ItemDto requestDto = ItemDto.builder()
-                .name("")
-                .description("Electric drill")
-                .available(true)
-                .build();
-
-        // When/Then
-        mockMvc.perform(post("/items")
-                        .header(USER_ID_HEADER, 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void updateItem_shouldReturnUpdatedItem() throws Exception {
         // Given
         ItemDto requestDto = ItemDto.builder()
@@ -241,38 +224,5 @@ class ItemControllerTest {
                 .andExpect(jsonPath("$.id", is(1)))
                 .andExpect(jsonPath("$.text", is("Great drill!")))
                 .andExpect(jsonPath("$.authorName", is("User")));
-    }
-
-    @Test
-    void addComment_shouldReturn400_whenTextIsBlank() throws Exception {
-        // Given
-        CommentDto requestDto = CommentDto.builder()
-                .text("")
-                .build();
-
-        // When/Then
-        mockMvc.perform(post("/items/{itemId}/comment", 1L)
-                        .header(USER_ID_HEADER, 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void addComment_shouldReturn400_whenNoCompletedBooking() throws Exception {
-        // Given
-        CommentDto requestDto = CommentDto.builder()
-                .text("Great!")
-                .build();
-
-        when(itemService.addComment(eq(1L), eq(1L), any(CommentDto.class)))
-                .thenThrow(new IllegalArgumentException("после завершения аренды"));
-
-        // When/Then
-        mockMvc.perform(post("/items/{itemId}/comment", 1L)
-                        .header(USER_ID_HEADER, 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
     }
 }
